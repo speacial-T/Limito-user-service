@@ -1,14 +1,17 @@
 package com.limito.user_service.model.dto.response;
 
 import com.limito.common.entity.UserRole;
-import com.limito.user_service.model.entity.User;
 import com.limito.user_service.model.entity.UserStatus;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class SignupResponseV1 {
 
 	private Long userId;
@@ -17,16 +20,5 @@ public class SignupResponseV1 {
 	private String brandName;
 	private String phoneNumber;
 	private UserStatus status;
-
-	public static SignupResponseV1 from(User user) {
-		return new SignupResponseV1(
-			user.getUserId(),
-			user.getEmail(),
-			user.getRole(),
-			user.getBrandName(),
-			user.getPhoneNumber(),
-			user.getStatus()
-		);
-	}
 
 }

@@ -14,6 +14,7 @@ import com.limito.user_service.model.dto.request.SignupRequestV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
 import com.limito.user_service.model.entity.User;
 import com.limito.user_service.model.entity.UserStatus;
+import com.limito.user_service.model.mapper.UserMapper;
 import com.limito.user_service.model.repository.UserRepositoryV1;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class UserServiceV1 {
 
 	private final UserRepositoryV1 userRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final UserMapper userMapper;
 
 	@Value("${security.master-key}")
 	private String configuredMasterKey;
@@ -52,19 +54,12 @@ public class UserServiceV1 {
 		// 유저 초기 상태 처리
 		UserStatus initialStatus = decideIntialStatus(request.getRole());
 
-		// 유저 엔티티 생성
-		User user = User.builder()
-			.email(request.getEmail())
-			.password(encodedPassword)
-			.role(request.getRole())
-			.brandName(request.getBrandName())
-			.phoneNumber(request.getPhoneNumber())
-			.status(initialStatus)
-			.build();
+		// Mapper로 User 엔티티 생성
+		User user = userMapper.toUserEntity(request, encodedPassword, initialStatus);
 
 		// 저장 및 응답 DTO로 변환
-		User savedUser = userRepository.save(user);
-		return SignupResponseV1.from(savedUser);
+		User saved = userRepository.save(user);
+		return userMapper.toSignUpResponse(saved);
 	}
 
 	private UserStatus decideIntialStatus(UserRole role) {
@@ -90,18 +85,11 @@ public class UserServiceV1 {
 		// 비밀번호 인코딩
 		String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-		// 유저 엔티티 생성
-		User admin = User.builder()
-			.role(UserRole.ADIMIN)
-			.email(request.getEmail())
-			.password(encodedPassword)
-			.phoneNumber(request.getPhoneNumber())
-			.status(UserStatus.APPROVED)
-			.build();
+		// Mapper로 ADMIN 유저 엔티티 생성
+		User admin = userMapper.toAdminUserEntity(request, encodedPassword);
 
 		// 저장 및 응답 DTO 변환
-		User savedUser = userRepository.save(admin);
-
-		return SignupResponseV1.from(savedUser);
+		User saved = userRepository.save(admin);
+		return userMapper.toSignUpResponse(saved);
 	}
 }
