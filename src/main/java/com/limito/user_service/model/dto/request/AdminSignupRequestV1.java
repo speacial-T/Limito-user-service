@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class SignupRequestV1 {
+public class AdminSignupRequestV1 {
 
 	@NotBlank
 	private String email;
@@ -26,5 +26,8 @@ public class SignupRequestV1 {
 
 	@NotBlank
 	private String phoneNumber;
+
+	@NotBlank
+	private String masterKey;
 
 }
