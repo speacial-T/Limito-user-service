@@ -18,7 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Builder
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -50,7 +49,19 @@ public class User extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private UserStatus status;
 
-	public Long getUserId() {
-		return userId;
+	@Builder
+	public User(
+		String email,
+		String password,
+		UserRole role,
+		String brandName,
+		String phoneNumber,
+		UserStatus status) {
+		this.email = email;
+		this.password = password;
+		this.role = role;
+		this.brandName = brandName;
+		this.phoneNumber = phoneNumber;
+		this.status = status;
 	}
 }
