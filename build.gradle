@@ -31,7 +31,7 @@ ext {
 
 dependencies {
 
-    implementation 'com.github.speacial-T:Limito-common:v0.0.1'
+    implementation 'com.github.speacial-T:Limito-common:v1.1.2'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'

@@ -2,7 +2,7 @@ package com.limito.user_service.model.mapper;
 
 import org.springframework.stereotype.Component;
 
-import com.limito.common.entity.UserRole;
+import com.limito.common.audit.UserRole;
 import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
 import com.limito.user_service.model.dto.request.SignupRequestV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
@@ -27,7 +27,7 @@ public class UserMapper {
 	// ADMIN 회원가입을 User 엔티티로 변환
 	public User toAdminUserEntity(AdminSignupRequestV1 req, String encodedPassword) {
 		return User.builder()
-			.role(UserRole.ADIMIN)
+			.role(UserRole.ADMIN)
 			.email(req.getEmail())
 			.password(encodedPassword)
 			.phoneNumber(req.getPhoneNumber())
@@ -41,6 +41,8 @@ public class UserMapper {
 			.userId(user.getUserId())
 			.email(user.getEmail())
 			.role(user.getRole())
+			.brandName(user.getBrandName())
+			.phoneNumber(user.getPhoneNumber())
 			.status(user.getStatus())
 			.build();
 	}

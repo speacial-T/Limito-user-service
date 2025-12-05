@@ -1,6 +1,6 @@
 package com.limito.user_service.model.dto.response;
 
-import com.limito.common.entity.UserRole;
+import com.limito.common.audit.UserRole;
 import com.limito.user_service.model.entity.UserStatus;
 
 import lombok.AllArgsConstructor;

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.limito.common.entity.UserRole;
+import com.limito.common.audit.UserRole;
 import com.limito.common.exception.AppException;
 import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
 import com.limito.user_service.model.dto.request.SignupRequestV1;
@@ -34,7 +34,7 @@ public class UserServiceV1 {
 	public SignupResponseV1 signUp(SignupRequestV1 request) {
 
 		// ADMIN ROLE 회원가입 제한
-		if (request.getRole() == UserRole.ADIMIN) {
+		if (request.getRole() == UserRole.ADMIN) {
 			throw new AppException(HttpStatus.BAD_REQUEST, "MASTER 계정은 별도 관리자 전용 회원가입을 사용해야 합니다.");
 		}
 

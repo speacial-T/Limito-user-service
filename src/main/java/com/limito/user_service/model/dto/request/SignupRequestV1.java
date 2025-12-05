@@ -1,6 +1,6 @@
 package com.limito.user_service.model.dto.request;
 
-import com.limito.common.entity.UserRole;
+import com.limito.common.audit.UserRole;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
