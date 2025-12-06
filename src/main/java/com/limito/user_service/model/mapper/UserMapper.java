@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.limito.common.audit.UserRole;
 import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
 import com.limito.user_service.model.dto.request.SignupRequestV1;
+import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
 import com.limito.user_service.model.entity.User;
 import com.limito.user_service.model.entity.UserStatus;
@@ -44,6 +45,17 @@ public class UserMapper {
 			.brandName(user.getBrandName())
 			.phoneNumber(user.getPhoneNumber())
 			.status(user.getStatus())
+			.build();
+	}
+
+	// User 엔티티를 LogInResponse로 변환
+	public LoginResponseV1 toLoginResponse(User user, String accessToken) {
+		return LoginResponseV1.builder()
+			.userId(user.getUserId())
+			.email(user.getEmail())
+			.role(user.getRole())
+			.brandName(user.getBrandName())
+			.accessToken(accessToken)
 			.build();
 	}
 }
