@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
+import com.limito.user_service.model.dto.request.LoginRequestV1;
 import com.limito.user_service.model.dto.request.SignupRequestV1;
+import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
 import com.limito.user_service.service.UserServiceV1;
 
@@ -32,6 +34,13 @@ public class UserControllerV1 {
 	@PostMapping("/signup/admin")
 	public ResponseEntity<SignupResponseV1> signUpAdmin(@Valid @RequestBody AdminSignupRequestV1 request) {
 		SignupResponseV1 response = userService.signUpAdmin(request);
+		return ResponseEntity.ok(response);
+	}
+
+	// 로그인
+	@PostMapping("/login")
+	public ResponseEntity<LoginResponseV1> logIn(@Valid @RequestBody LoginRequestV1 request) {
+		LoginResponseV1 response = userService.logIn(request);
 		return ResponseEntity.ok(response);
 	}
 }
