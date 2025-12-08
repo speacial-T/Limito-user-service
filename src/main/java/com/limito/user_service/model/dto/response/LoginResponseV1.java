@@ -15,6 +15,5 @@ public class LoginResponseV1 {
 	private String brandName;
 
 	private String accessToken;
-	// private Long accessTokenExpiresAt;
 
 }
