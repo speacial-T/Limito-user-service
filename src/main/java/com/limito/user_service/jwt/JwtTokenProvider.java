@@ -20,13 +20,12 @@ public class JwtTokenProvider {
 	@Value("${security.jwt.access-token-expire-minutes:30}")
 	private long accessTokenExpireMinutes;
 
-	public String generateAccessToken(Long userId, String email, UserRole role) {
+	public String generateAccessToken(Long userId, UserRole role) {
 		Instant now = Instant.now();
 		Instant expiry = now.plus(accessTokenExpireMinutes, ChronoUnit.MINUTES);
 
 		return Jwts.builder()
 			.setSubject(String.valueOf(userId))
-			.claim("X-User-Email", email)
 			.claim("X-User-Role", role.name())
 			.setIssuedAt(Date.from(now))
 			.setExpiration(Date.from(expiry))

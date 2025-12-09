@@ -123,7 +123,6 @@ public class UserServiceV1 {
 		// 엑세스 토큰 발급
 		String accessToken = jwtTokenProvider.generateAccessToken(
 			user.getUserId(),
-			user.getEmail(),
 			user.getRole()
 		);
 		long expiresAt = jwtTokenProvider.getAccessTokenExpiresAt();
@@ -172,8 +171,5 @@ public class UserServiceV1 {
 			return userMapper.toPendingCompanyResponse(user);
 		}
 		throw AppException.of(UserErrorCode.INVALID_STATUS_CHANGE);
-
-		// 응답 DTO 변환
-		return userMapper.toPendingCompanyResponse(user);
 	}
 }
