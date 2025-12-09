@@ -15,7 +15,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @Component
 public class JwtTokenProvider {
 
-	@Value("${security.jwt.secret-key}")
+	@Value("${SECURITY_JWT_SECRET_KEY}")
 	private String secretKey;
 	@Value("${security.jwt.access-token-expire-minutes:30}")
 	private long accessTokenExpireMinutes;

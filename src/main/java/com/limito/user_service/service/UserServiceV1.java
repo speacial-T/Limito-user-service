@@ -37,7 +37,7 @@ public class UserServiceV1 {
 	private final UserMapper userMapper;
 	private final JwtTokenProvider jwtTokenProvider;
 
-	@Value("${security.master-key}")
+	@Value("${SECURITY_MASTER_KEY}")
 	private String configuredMasterKey;
 
 	@Transactional

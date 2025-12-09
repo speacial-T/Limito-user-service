@@ -30,7 +30,7 @@ eureka:
 
 
 security:
-  master-key: limito-master-1234
+  master-key: ${SECURITY_MASTER_KEY}
 
   jwt:
     secret-key: ${SECURITY_JWT_SECRET_KEY}
