@@ -59,7 +59,8 @@ public class UserControllerV1 {
 
 	// 승인 또는 거절 처리
 	@PostMapping("/signup-requests/{userId}")
-	public ResponseEntity<PendingCompanyResponseV1> updateCompanyStatus(@PathVariable Long userId,
+	public ResponseEntity<PendingCompanyResponseV1> updateCompanyStatus(
+		@PathVariable Long userId,
 		@Valid @RequestBody CompanyApprovalRequestV1 request) {
 		PendingCompanyResponseV1 response = userService.updateCompanyStatus(userId, request);
 		return ResponseEntity.ok(response);

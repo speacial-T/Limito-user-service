@@ -37,7 +37,7 @@ public class UserServiceV1 {
 	private final UserMapper userMapper;
 	private final JwtTokenProvider jwtTokenProvider;
 
-	@Value("${SECURITY_MASTER_KEY}")
+	@Value("${security.master-key}")
 	private String configuredMasterKey;
 
 	@Transactional
@@ -148,20 +148,25 @@ public class UserServiceV1 {
 			.orElseThrow(() -> AppException.of(HttpStatus.UNAUTHORIZED, "사용자 정보가 없습니다."));
 
 		// 관리자 권한 체크
-		if (currentRole == UserRole.ADMIN) {
+		if (currentRole != UserRole.ADMIN) {
 			throw AppException.of(HttpStatus.FORBIDDEN, "권한이 없습니다.");
 		}
 
-		// 승인 또는 거절 대상 조회
+		// 요청 대상 조회
 		User user = userRepository.findById(targetUserId)
 			.orElseThrow(() -> AppException.of(UserErrorCode.USER_NOT_FOUND));
 
-		// PENDING 상태 체크
+		// COMPANY 회원인지 체크
 		if (user.getRole() != UserRole.COMPANY) {
 			throw AppException.of(UserErrorCode.NOT_COMPANY_USER);
 		}
 
-		// 승인 또는 거절 처리
+		// PENDING 상태인지 체크
+		if (user.getStatus() != UserStatus.PENDING) {
+			throw AppException.of(UserErrorCode.USER_NOT_PENDING);
+		}
+
+		// 요청 처리
 		if (request.getStatus() == UserStatus.APPROVED) {
 			user.approve();
 			return userMapper.toPendingCompanyResponse(user);
