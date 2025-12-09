@@ -17,6 +17,7 @@ import com.limito.user_service.model.dto.request.SignupRequestV1;
 import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
+import com.limito.user_service.model.repository.UserRepositoryV1;
 import com.limito.user_service.service.UserServiceV1;
 
 import jakarta.validation.Valid;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class UserControllerV1 {
 
 	private final UserServiceV1 userService;
+	private final UserRepositoryV1 userRepositoryV1;
 
 	// USER, COMPANY 회원가입
 	@PostMapping("/signup")
@@ -53,8 +55,8 @@ public class UserControllerV1 {
 	// PENDING 회사 목록 조회
 	@GetMapping("/signup-requests")
 	public ResponseEntity<Page<PendingCompanyResponseV1>> getPendingCompany(Pageable pageable) {
-		Page<PendingCompanyResponseV1> response = userService.getPendingCompany(pageable);
-		return ResponseEntity.ok(response);
+		Page<PendingCompanyResponseV1> page = userService.getPendingCompany(pageable);
+		return ResponseEntity.ok(page);
 	}
 
 	// 승인 또는 거절 처리

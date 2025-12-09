@@ -133,7 +133,8 @@ public class UserServiceV1 {
 
 	@Transactional(readOnly = true)
 	public Page<PendingCompanyResponseV1> getPendingCompany(Pageable pageable) {
-		Page<User> users = userRepository.findByStatus(UserStatus.PENDING, pageable);
+		Pageable enforced = PageableUtils.enforce(pageable);
+		Page<User> users = userRepository.findByStatus(UserStatus.PENDING, enforced);
 		return users.map(userMapper::toPendingCompanyResponse);
 	}
 
