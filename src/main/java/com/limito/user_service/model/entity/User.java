@@ -64,4 +64,19 @@ public class User extends BaseEntity {
 		this.phoneNumber = phoneNumber;
 		this.status = status;
 	}
+
+	//승인 및 거절 메서드
+	public void approve() {
+		if (this.status != UserStatus.PENDING) {
+			throw new IllegalStateException("PENDING 상태에서만 승인할 수 있습니다.");
+		}
+		this.status = UserStatus.APPROVED;
+	}
+
+	public void reject() {
+		if (this.status != UserStatus.PENDING) {
+			throw new IllegalStateException("PENDING 상태에서만 거절할 수 있습니다.");
+		}
+		this.status = UserStatus.REJECTED;
+	}
 }
