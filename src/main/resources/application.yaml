@@ -30,8 +30,7 @@ eureka:
 
 
 security:
-  master-key: limito-master-1234
-
+  master-key: "limito-master-1234"
   jwt:
-    secret-key: ${SECURITY_JWT_SECRET_KEY}
+    secret-key: "N2Y5ZDgzNzMwZTU1ODFkMGNhNjE4YzY2YmI3M2ZlYmQ="
     access-token-expire-minutes: 30
