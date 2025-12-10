@@ -6,6 +6,7 @@ import com.limito.common.audit.UserRole;
 import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
 import com.limito.user_service.model.dto.request.SignupRequestV1;
 import com.limito.user_service.model.dto.response.LoginResponseV1;
+import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
 import com.limito.user_service.model.entity.User;
 import com.limito.user_service.model.entity.UserStatus;
@@ -56,6 +57,18 @@ public class UserMapper {
 			.role(user.getRole())
 			.brandName(user.getBrandName())
 			.accessToken(accessToken)
+			.build();
+	}
+
+	// PENDING 상태인 COMPANY 회원
+	public PendingCompanyResponseV1 toPendingCompanyResponse(User user) {
+		return PendingCompanyResponseV1.builder()
+			.userId(user.getUserId())
+			.email(user.getEmail())
+			.brandName(user.getBrandName())
+			.phoneNumber(user.getPhoneNumber())
+			.status(user.getStatus())
+			.createdAt(user.getCreatedAt())
 			.build();
 	}
 }

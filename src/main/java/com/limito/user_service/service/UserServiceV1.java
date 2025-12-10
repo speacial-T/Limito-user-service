@@ -1,19 +1,24 @@
 package com.limito.user_service.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.limito.common.audit.UserContextHolder;
 import com.limito.common.audit.UserRole;
 import com.limito.common.exception.AppException;
 import com.limito.user_service.jwt.JwtTokenProvider;
 import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
+import com.limito.user_service.model.dto.request.CompanyApprovalRequestV1;
 import com.limito.user_service.model.dto.request.LoginRequestV1;
 import com.limito.user_service.model.dto.request.SignupRequestV1;
 import com.limito.user_service.model.dto.response.LoginResponseV1;
+import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
 import com.limito.user_service.model.entity.User;
 import com.limito.user_service.model.entity.UserStatus;
@@ -118,12 +123,59 @@ public class UserServiceV1 {
 		// 엑세스 토큰 발급
 		String accessToken = jwtTokenProvider.generateAccessToken(
 			user.getUserId(),
-			user.getEmail(),
 			user.getRole()
 		);
 		long expiresAt = jwtTokenProvider.getAccessTokenExpiresAt();
 
 		// 응답 DTO 변환
 		return userMapper.toLoginResponse(user, accessToken);
+	}
+
+	@Transactional(readOnly = true)
+	public Page<PendingCompanyResponseV1> getPendingCompany(Pageable pageable) {
+		Pageable enforced = PageableUtils.enforce(pageable);
+		Page<User> users = userRepository.findByStatus(UserStatus.PENDING, enforced);
+		return users.map(userMapper::toPendingCompanyResponse);
+	}
+
+	@Transactional
+	public PendingCompanyResponseV1 updateCompanyStatus(Long targetUserId, CompanyApprovalRequestV1 request) {
+
+		// 사용자 정보 조회
+		UserRole currentRole = UserContextHolder.getCurrentUserRole()
+			.orElseThrow(() -> AppException.of(HttpStatus.UNAUTHORIZED, "사용자 정보가 없습니다."));
+
+		Long adminId = UserContextHolder.getCurrentUserId()
+			.orElseThrow(() -> AppException.of(HttpStatus.UNAUTHORIZED, "사용자 정보가 없습니다."));
+
+		// 관리자 권한 체크
+		if (currentRole != UserRole.ADMIN) {
+			throw AppException.of(HttpStatus.FORBIDDEN, "권한이 없습니다.");
+		}
+
+		// 요청 대상 조회
+		User user = userRepository.findById(targetUserId)
+			.orElseThrow(() -> AppException.of(UserErrorCode.USER_NOT_FOUND));
+
+		// COMPANY 회원인지 체크
+		if (user.getRole() != UserRole.COMPANY) {
+			throw AppException.of(UserErrorCode.NOT_COMPANY_USER);
+		}
+
+		// PENDING 상태인지 체크
+		if (user.getStatus() != UserStatus.PENDING) {
+			throw AppException.of(UserErrorCode.USER_NOT_PENDING);
+		}
+
+		// 요청 처리
+		if (request.getStatus() == UserStatus.APPROVED) {
+			user.approve();
+			return userMapper.toPendingCompanyResponse(user);
+		}
+		if (request.getStatus() == UserStatus.REJECTED) {
+			user.reject();
+			return userMapper.toPendingCompanyResponse(user);
+		}
+		throw AppException.of(UserErrorCode.INVALID_STATUS_CHANGE);
 	}
 }
