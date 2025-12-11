@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -60,11 +61,13 @@ public class UserControllerV1 {
 	}
 
 	// 승인 또는 거절 처리
-	@PostMapping("/signup-requests/{userId}")
+	@PostMapping("/requests/{userId}")
 	public ResponseEntity<PendingCompanyResponseV1> updateCompanyStatus(
 		@PathVariable Long userId,
-		@Valid @RequestBody CompanyApprovalRequestV1 request) {
-		PendingCompanyResponseV1 response = userService.updateCompanyStatus(userId, request);
+		@Valid @RequestBody CompanyApprovalRequestV1 request,
+		@RequestHeader("X-User-Id") Long adminId,
+		@RequestHeader("X-User-Role") String role) {
+		PendingCompanyResponseV1 response = userService.updateCompanyStatus(userId, request, adminId, role);
 		return ResponseEntity.ok(response);
 	}
 
