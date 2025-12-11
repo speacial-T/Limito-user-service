@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.limito.common.audit.UserContextHolder;
 import com.limito.common.audit.UserRole;
 import com.limito.common.exception.AppException;
 import com.limito.user_service.jwt.JwtTokenProvider;
@@ -125,7 +124,6 @@ public class UserServiceV1 {
 			user.getUserId(),
 			user.getRole()
 		);
-		long expiresAt = jwtTokenProvider.getAccessTokenExpiresAt();
 
 		// 응답 DTO 변환
 		return userMapper.toLoginResponse(user, accessToken);
@@ -139,14 +137,11 @@ public class UserServiceV1 {
 	}
 
 	@Transactional
-	public PendingCompanyResponseV1 updateCompanyStatus(Long targetUserId, CompanyApprovalRequestV1 request) {
+	public PendingCompanyResponseV1 updateCompanyStatus(Long targetUserId, CompanyApprovalRequestV1 request,
+		Long adminId, String role) {
 
 		// 사용자 정보 조회
-		UserRole currentRole = UserContextHolder.getCurrentUserRole()
-			.orElseThrow(() -> AppException.of(HttpStatus.UNAUTHORIZED, "사용자 정보가 없습니다."));
-
-		Long adminId = UserContextHolder.getCurrentUserId()
-			.orElseThrow(() -> AppException.of(HttpStatus.UNAUTHORIZED, "사용자 정보가 없습니다."));
+		UserRole currentRole = UserRole.valueOf(role);
 
 		// 관리자 권한 체크
 		if (currentRole != UserRole.ADMIN) {

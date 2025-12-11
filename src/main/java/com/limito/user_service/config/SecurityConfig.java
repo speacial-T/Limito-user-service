@@ -16,9 +16,7 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
-	//**일단 보안을 모두 허용
-	// TODO: gateway+jwt 개발완료하면 삭제하기.
-	// **//
+	// 일단 보안을 모두 허용
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http

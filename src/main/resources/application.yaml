@@ -1,6 +1,9 @@
+server:
+  port: ${SERVER_PORT:19092}
+
 spring:
   config:
-    import: optional:file:.env[.properties]
+    import: optional:file:./.env[.properties]
 
   application:
     name: user-service
@@ -20,9 +23,6 @@ spring:
         format_sql: true
         use_sql_comments: true
 
-server:
-  port: ${SERVER_PORT:19092}
-
 eureka:
   client:
     service-url:
@@ -34,5 +34,3 @@ security:
   jwt:
     secret-key: ${SECURITY_JWT_SECRET_KEY}
     access-token-expire-minutes: 30
-
-
