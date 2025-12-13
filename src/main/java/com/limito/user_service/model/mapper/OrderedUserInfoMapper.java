@@ -12,9 +12,9 @@ public class OrderedUserInfoMapper {
 	public OrderedUserInfoResponseV1 toOrderedUserInfoResponse(User user, UserAddress userAddress) {
 		return OrderedUserInfoResponseV1.builder()
 			.userId(user.getUserId())
-			.name(user.getName())
+			.receiverName(user.getName())
 			.phoneNumber(user.getPhoneNumber())
-			.address(deliveryAddress(userAddress))
+			.deliveryAddress(deliveryAddress(userAddress))
 			.build();
 	}
 

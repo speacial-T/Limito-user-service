@@ -8,8 +8,8 @@ import lombok.Getter;
 public class OrderedUserInfoResponseV1 {
 
 	private Long userId;
-	private String name;
+	private String receiverName;
 	private String phoneNumber;
-	private String address;
+	private String deliveryAddress;
 
 }
