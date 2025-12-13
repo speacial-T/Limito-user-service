@@ -12,7 +12,7 @@ import com.limito.user_service.service.UserInternalServiceV1;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("internal/api/v1/user")
+@RequestMapping("/internal/api/v1/user")
 @RequiredArgsConstructor
 public class UserInternalControllerV1 {
 
