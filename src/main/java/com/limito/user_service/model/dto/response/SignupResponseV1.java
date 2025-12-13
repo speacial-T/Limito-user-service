@@ -16,6 +16,7 @@ public class SignupResponseV1 {
 
 	private Long userId;
 	private String email;
+	private String name;
 	private UserRole role;
 	private String brandName;
 	private String phoneNumber;
