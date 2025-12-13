@@ -29,17 +29,25 @@ public class UserAddress {
 	@Column(nullable = false, length = 255)
 	private String address;
 
+	@Column(nullable = false)
+	private boolean defaultAddress;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", nullable = false, updatable = false)
 	private User user;
 
 	@Builder
-	public UserAddress(User user, String address) {
+	public UserAddress(User user, String address, boolean defaultAddress) {
 		this.user = user;
 		this.address = address;
+		this.defaultAddress = defaultAddress;
 	}
 
 	public void changeUser(User user) {
 		this.user = user;
+	}
+
+	public void setDefault(boolean value) {
+		this.defaultAddress = value;
 	}
 }

@@ -1,8 +1,12 @@
 package com.limito.user_service.model.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.limito.common.audit.BaseEntity;
 import com.limito.common.audit.UserRole;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,6 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -35,6 +40,9 @@ public class User extends BaseEntity {
 	@Column(nullable = false, length = 100)
 	private String password;
 
+	@Column(nullable = false, length = 50)
+	private String name;
+
 	@Column(nullable = false)
 	@Enumerated(EnumType.STRING)
 	private UserRole role;
@@ -49,20 +57,27 @@ public class User extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private UserStatus status;
 
+	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<UserAddress> addresses = new ArrayList<>();
+
 	@Builder
 	public User(
 		String email,
 		String password,
+		String name,
 		UserRole role,
 		String brandName,
 		String phoneNumber,
-		UserStatus status) {
+		UserStatus status,
+		List<UserAddress> addresses) {
 		this.email = email;
 		this.password = password;
+		this.name = name;
 		this.role = role;
 		this.brandName = brandName;
 		this.phoneNumber = phoneNumber;
 		this.status = status;
+		this.addresses = addresses;
 	}
 
 	//승인 및 거절 메서드

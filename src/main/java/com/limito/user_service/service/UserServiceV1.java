@@ -1,5 +1,7 @@
 package com.limito.user_service.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,13 +18,18 @@ import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
 import com.limito.user_service.model.dto.request.CompanyApprovalRequestV1;
 import com.limito.user_service.model.dto.request.LoginRequestV1;
 import com.limito.user_service.model.dto.request.SignupRequestV1;
+import com.limito.user_service.model.dto.request.UserAddressRequestV1;
 import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
+import com.limito.user_service.model.dto.response.UserAddressResponseV1;
 import com.limito.user_service.model.entity.User;
+import com.limito.user_service.model.entity.UserAddress;
 import com.limito.user_service.model.entity.UserStatus;
 import com.limito.user_service.model.error.UserErrorCode;
+import com.limito.user_service.model.mapper.UserAddressMapper;
 import com.limito.user_service.model.mapper.UserMapper;
+import com.limito.user_service.model.repository.UserAddressRepositoryV1;
 import com.limito.user_service.model.repository.UserRepositoryV1;
 
 import lombok.RequiredArgsConstructor;
@@ -32,8 +39,10 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceV1 {
 
 	private final UserRepositoryV1 userRepository;
+	private final UserAddressRepositoryV1 userAddressRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final UserMapper userMapper;
+	private final UserAddressMapper userAddressMapper;
 	private final JwtTokenProvider jwtTokenProvider;
 
 	@Value("${security.master-key}")
@@ -172,5 +181,43 @@ public class UserServiceV1 {
 			return userMapper.toPendingCompanyResponse(user);
 		}
 		throw AppException.of(UserErrorCode.INVALID_STATUS_CHANGE);
+	}
+
+	@Transactional
+	public UserAddressResponseV1 createAddress(Long userId, UserAddressRequestV1 request) {
+
+		// 유저 조회
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> AppException.of(UserErrorCode.USER_NOT_FOUND));
+
+		// 유저의 주소 개수 조회
+		long count = userAddressRepository.countByUserUserId((userId));
+		boolean isFirstAddress = (count == 0);
+
+		// 실제로 이 주소를 기본배송지로 만들지 여부 결정
+		boolean wantDefault = Boolean.TRUE.equals(request.getDefaultAddress());
+		boolean makeDefault = isFirstAddress || wantDefault;
+
+		// 새로 기본으로 만들 거고, 기존 주소가 있다면 기존 기본주소 해제
+		if (makeDefault && !isFirstAddress) {
+			userAddressRepository.clearDefaultAddress(userId);
+		}
+
+		// Mapper로 User 엔티티 생성
+		UserAddress address = userAddressMapper.toUserAddress(user, request, makeDefault);
+
+		// 저장 및 응답 DTO 변환
+		UserAddress saved = userAddressRepository.save(address);
+		return userAddressMapper.toUserAddressResponse(saved);
+	}
+
+	@Transactional(readOnly = true)
+	public List<UserAddressResponseV1> getAddresses(Long userId) {
+		// 유저 조회
+		List<UserAddress> addresses = userAddressRepository.findByUserUserId(userId);
+		// 응답 DTO 변환
+		return addresses.stream()
+			.map(userAddressMapper::toUserAddressResponse)
+			.toList();
 	}
 }
