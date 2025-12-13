@@ -22,7 +22,6 @@ import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
 import com.limito.user_service.model.dto.response.UserAddressResponseV1;
-import com.limito.user_service.model.repository.UserRepositoryV1;
 import com.limito.user_service.service.UserServiceV1;
 
 import jakarta.validation.Valid;
@@ -34,7 +33,6 @@ import lombok.RequiredArgsConstructor;
 public class UserControllerV1 {
 
 	private final UserServiceV1 userService;
-	private final UserRepositoryV1 userRepositoryV1;
 
 	// USER, COMPANY 회원가입
 	@PostMapping("/auth/signup")

@@ -5,8 +5,9 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class GetOrderedUserInfoResponseV1 {
+public class OrderedUserInfoResponseV1 {
 
+	private Long userId;
 	private String name;
 	private String phoneNumber;
 	private String address;
