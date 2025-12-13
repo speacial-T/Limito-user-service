@@ -20,6 +20,9 @@ public class AdminSignupRequestV1 {
 	private String password;
 
 	@NotBlank
+	private String name;
+
+	@NotBlank
 	@Pattern(
 		regexp = "^010-\\d{4}-\\d{4}$",
 		message = "전화번호 형식은 010-1234-5678 형태여야 합니다."

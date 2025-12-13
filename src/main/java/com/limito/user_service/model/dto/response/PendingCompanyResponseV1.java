@@ -13,6 +13,7 @@ public class PendingCompanyResponseV1 {
 
 	private Long userId;
 	private String email;
+	private String name;
 	private String brandName;
 	private String phoneNumber;
 	private UserStatus status;

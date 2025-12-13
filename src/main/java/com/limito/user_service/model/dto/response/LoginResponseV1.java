@@ -11,6 +11,7 @@ public class LoginResponseV1 {
 
 	private Long userId;
 	private String email;
+	private String name;
 	private UserRole role;
 	private String brandName;
 

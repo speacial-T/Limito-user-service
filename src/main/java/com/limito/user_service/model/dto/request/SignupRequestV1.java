@@ -22,6 +22,9 @@ public class SignupRequestV1 {
 	@NotBlank
 	private String password;
 
+	@NotBlank
+	private String name;
+
 	@NotNull
 	private UserRole role;
 
