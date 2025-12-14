@@ -1,6 +1,7 @@
 package com.limito.user_service.model.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 import com.limito.user_service.model.entity.UserAddress;
 
 public interface UserAddressRepositoryV1 extends JpaRepository<UserAddress, UUID> {
+
+	Optional<UserAddress> findByUserUserIdAndDefaultAddressTrue(Long userId);
 
 	List<UserAddress> findByUserUserId(Long userId);
 
