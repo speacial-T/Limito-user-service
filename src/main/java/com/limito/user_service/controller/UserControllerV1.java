@@ -21,9 +21,11 @@ import com.limito.user_service.model.dto.request.UserAddressRequestV1;
 import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
+import com.limito.user_service.model.dto.response.TokenResponseV1;
 import com.limito.user_service.model.dto.response.UserAddressResponseV1;
 import com.limito.user_service.service.UserServiceV1;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +58,13 @@ public class UserControllerV1 {
 		HttpServletResponse response) {
 		LoginResponseV1 loginResponse = userService.logIn(request, response);
 		return ResponseEntity.ok(loginResponse);
+	}
+
+	// 토큰 재발급
+	@PostMapping("/auth/refresh")
+	public ResponseEntity<TokenResponseV1> refresh(HttpServletRequest request, HttpServletResponse response) {
+		TokenResponseV1 tokenResponse = userService.refresh(request, response);
+		return ResponseEntity.ok(tokenResponse);
 	}
 
 	// PENDING 회사 목록 조회

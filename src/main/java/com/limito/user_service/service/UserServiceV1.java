@@ -31,6 +31,7 @@ import com.limito.user_service.model.dto.request.UserAddressRequestV1;
 import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
+import com.limito.user_service.model.dto.response.TokenResponseV1;
 import com.limito.user_service.model.dto.response.UserAddressResponseV1;
 import com.limito.user_service.model.entity.User;
 import com.limito.user_service.model.entity.UserAddress;
@@ -41,6 +42,8 @@ import com.limito.user_service.model.mapper.UserMapper;
 import com.limito.user_service.model.repository.UserAddressRepositoryV1;
 import com.limito.user_service.model.repository.UserRepositoryV1;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -189,6 +192,90 @@ public class UserServiceV1 {
 			.build();
 
 		response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+	}
+
+	@Transactional
+	public TokenResponseV1 refresh(HttpServletRequest request, HttpServletResponse response) {
+
+		// 쿠키에서 refreshToken 꺼내기
+		String refreshToken = extractRefreshTokenFromCookie(request);
+		if (refreshToken == null) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// refreshToken 만료 검증 및 claim 꺼내기
+		RefreshTokenClaims refreshTokenClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
+		String jwtId = refreshTokenClaims.getJwtId();
+
+		// Redis 조회하기
+		RefreshTokenRecord record = refreshTokenStore.find(jwtId);
+		if (record == null) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+		if (record.getRefreshTokenStatus() == RefreshTokenStatus.REVOKED) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// Redis 값과 refreshToken claim 일치 여부 확인
+		if (!record.getUserId().equals(refreshTokenClaims.getUserId())) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+		if (!record.getLoginSessionId().equals(refreshTokenClaims.getLoginSessionId())) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// 해시 비교
+		String incomingHash = TokenHashUtil.sha256(refreshToken);
+		if (!incomingHash.equals(record.getRefreshHash())) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// 통과하면 새 토큰 발급(RTR)
+		String newAccessToken = jwtTokenProvider.generateAccessToken(
+			refreshTokenClaims.getUserId(),
+			userRepository.findById(refreshTokenClaims.getUserId())
+				.orElseThrow(() -> AppException.of(UserErrorCode.USER_NOT_FOUND))
+				.getRole()
+		);
+
+		// loginSessionId 값은 유지
+		String newRefreshToken = jwtTokenProvider.generateRefreshToken(
+			refreshTokenClaims.getUserId(),
+			refreshTokenClaims.getLoginSessionId()
+		);
+
+		RefreshTokenClaims newClaims = jwtTokenProvider.parseRefreshToken(newRefreshToken);
+
+		// Redis 업데이트
+		refreshTokenStore.revoke(jwtId);
+		RefreshTokenRecord newRecord = RefreshTokenRecord.builder()
+			.userId(newClaims.getUserId())
+			.loginSessionId(newClaims.getLoginSessionId())
+			.refreshHash(TokenHashUtil.sha256(newRefreshToken))
+			.refreshTokenStatus(RefreshTokenStatus.ACTIVE)
+			.expiresAt(newClaims.getExpiresAt())
+			.build();
+
+		Duration ttl = Duration.ofMillis(newClaims.getExpiresAt() - System.currentTimeMillis());
+		refreshTokenStore.save(newClaims.getJwtId(), newRecord, ttl);
+
+		// 쿠키 갱신
+		setRefreshTokenCookie(response, newRefreshToken, ttl);
+
+		return TokenResponseV1.of(newAccessToken);
+	}
+
+	private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+		if (request.getCookies() == null) {
+			return null;
+		}
+		for (Cookie cookie : request.getCookies()) {
+			if ("refreshToken".equals(cookie.getName())) {
+				String value = cookie.getValue();
+				return (value == null || value.isBlank()) ? null : value;
+			}
+		}
+		return null;
 	}
 
 	@Transactional(readOnly = true)
