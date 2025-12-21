@@ -24,6 +24,7 @@ import com.limito.user_service.model.dto.response.SignupResponseV1;
 import com.limito.user_service.model.dto.response.UserAddressResponseV1;
 import com.limito.user_service.service.UserServiceV1;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -50,9 +51,11 @@ public class UserControllerV1 {
 
 	// 로그인
 	@PostMapping("/auth/login")
-	public ResponseEntity<LoginResponseV1> logIn(@Valid @RequestBody LoginRequestV1 request) {
-		LoginResponseV1 response = userService.logIn(request);
-		return ResponseEntity.ok(response);
+	public ResponseEntity<LoginResponseV1> logIn(
+		@Valid @RequestBody LoginRequestV1 request,
+		HttpServletResponse response) {
+		LoginResponseV1 loginResponse = userService.logIn(request, response);
+		return ResponseEntity.ok(loginResponse);
 	}
 
 	// PENDING 회사 목록 조회
