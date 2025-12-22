@@ -2,7 +2,7 @@ name: Spring Boot Application Deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "dev" ]
 
 jobs:
   build:
@@ -18,16 +18,16 @@ jobs:
           distribution: 'temurin'
 
       - name: 파일 전송을 위한 디렉토리 생성
-        run: mkdir ./user-service
+        run: mkdir ./limito-user
 
       - name: Gradle Build
-        run: ./gradlew clean build
+        run: ./gradlew clean build -x test
 
       - name: Archive 파일명 변경
-        run: mv ./build/libs/*SNAPSHOT.jar ./user-service/app.jar
+        run: mv ./build/libs/*SNAPSHOT.jar ./limito-user/app.jar
 
       - name: github secrets에 저장된 ENV_PROPERTIES를 읽어서 .env 생성
-        run: echo "${{ secrets.ENV_PROPERTIES }}" > ./user-service/.env
+        run: echo "${{ secrets.ENV_PROPERTIES }}" > ./limito-user/.env
 
       - name: .env와 app.jar를 ec2에 전송
         uses: appleboy/scp-action@v1
@@ -35,7 +35,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PEM_KEY }}
-          source: ./user-service
+          source: ./limito-user
           target: /home/ec2-user/deploy
 
       - name: SSH를 통해 EC2에 접속 후 서비스 재 시작
@@ -45,10 +45,10 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PEM_KEY }}
           script: |
-            rm -rf /home/ec2-user/user-service
-            mkdir /home/ec2-user/user-service
-            mv /home/ec2-user/deploy/user-service /home/ec2-user
-            cd /home/ec2-user/user-service
-            sudo fuser -k -n tcp 19092 || true
-            nohup java -jar /home/ec2-user/user-service/app.jar > application-log 2>&1 &
+            rm -rf /home/ec2-user/limito-user
+            mkdir /home/ec2-user/limito-user
+            mv /home/ec2-user/deploy/limito-user /home/ec2-user
+            cd /home/ec2-user/limito-user
+            sudo fuser -k -n tcp 19090 || true
+            nohup java -jar /home/ec2-user/limito-user/app.jar > application-log 2>&1 &
             rm -rf /home/ec2-user/deploy
