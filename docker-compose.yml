@@ -11,3 +11,9 @@ services:
       POSTGRES_DB: limito-db
     ports:
       - 15432:5432
+
+  redis:
+    image: redis/redis-stack:latest
+    container_name: limito-redis
+    ports:
+      - 16379:6379

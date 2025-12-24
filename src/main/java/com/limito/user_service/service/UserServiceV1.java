@@ -1,11 +1,15 @@
 package com.limito.user_service.service;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +18,11 @@ import org.springframework.util.StringUtils;
 import com.limito.common.audit.UserRole;
 import com.limito.common.exception.AppException;
 import com.limito.user_service.jwt.JwtTokenProvider;
+import com.limito.user_service.jwt.refreshToken.RefreshTokenClaims;
+import com.limito.user_service.jwt.refreshToken.RefreshTokenRecord;
+import com.limito.user_service.jwt.refreshToken.RefreshTokenStatus;
+import com.limito.user_service.jwt.refreshToken.RefreshTokenStore;
+import com.limito.user_service.jwt.refreshToken.TokenHashUtil;
 import com.limito.user_service.model.dto.request.AdminSignupRequestV1;
 import com.limito.user_service.model.dto.request.CompanyApprovalRequestV1;
 import com.limito.user_service.model.dto.request.LoginRequestV1;
@@ -22,6 +31,7 @@ import com.limito.user_service.model.dto.request.UserAddressRequestV1;
 import com.limito.user_service.model.dto.response.LoginResponseV1;
 import com.limito.user_service.model.dto.response.PendingCompanyResponseV1;
 import com.limito.user_service.model.dto.response.SignupResponseV1;
+import com.limito.user_service.model.dto.response.TokenResponseV1;
 import com.limito.user_service.model.dto.response.UserAddressResponseV1;
 import com.limito.user_service.model.entity.User;
 import com.limito.user_service.model.entity.UserAddress;
@@ -32,6 +42,9 @@ import com.limito.user_service.model.mapper.UserMapper;
 import com.limito.user_service.model.repository.UserAddressRepositoryV1;
 import com.limito.user_service.model.repository.UserRepositoryV1;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -44,9 +57,13 @@ public class UserServiceV1 {
 	private final UserMapper userMapper;
 	private final UserAddressMapper userAddressMapper;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final RefreshTokenStore refreshTokenStore;
 
 	@Value("${security.master-key}")
 	private String configuredMasterKey;
+
+	@Value("${security.jwt.refresh-token-expire-days}")
+	private int refreshTokenExpireDays;
 
 	@Transactional
 	public SignupResponseV1 signUp(SignupRequestV1 request) {
@@ -112,7 +129,7 @@ public class UserServiceV1 {
 	}
 
 	@Transactional
-	public LoginResponseV1 logIn(LoginRequestV1 request) {
+	public LoginResponseV1 logIn(LoginRequestV1 request, HttpServletResponse response) {
 
 		// 이메일로 유저 조회
 		User user = userRepository.findByEmail(request.getEmail())
@@ -128,14 +145,137 @@ public class UserServiceV1 {
 			throw AppException.of(UserErrorCode.INVALID_LOGIN);
 		}
 
-		// 엑세스 토큰 발급
+		// LoginSessionId 생성
+		String loginSessionId = UUID.randomUUID().toString();
+
+		// AccessToken 발급
 		String accessToken = jwtTokenProvider.generateAccessToken(
 			user.getUserId(),
 			user.getRole()
 		);
 
+		// RefreshToken 발급
+		String refreshToken = jwtTokenProvider.generateRefreshToken(
+			user.getUserId(),
+			loginSessionId
+		);
+
+		// RefreshToken 파싱해서 jwtId와 exp 꺼내기
+		RefreshTokenClaims refreshTokenClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
+
+		// Redis 저장(hash만 저장)
+		RefreshTokenRecord record = RefreshTokenRecord.builder()
+			.userId(refreshTokenClaims.getUserId())
+			.loginSessionId(refreshTokenClaims.getLoginSessionId())
+			.refreshHash(TokenHashUtil.sha256(refreshToken))
+			.refreshTokenStatus(RefreshTokenStatus.ACTIVE)
+			.expiresAt(refreshTokenClaims.getExpiresAt())
+			.build();
+
+		Duration ttl = Duration.ofMillis(refreshTokenClaims.getExpiresAt() - System.currentTimeMillis());
+		refreshTokenStore.save(refreshTokenClaims.getJwtId(), record, ttl);
+
+		// RefreshToken을 HttpOnly 쿠키로 내려주기
+		setRefreshTokenCookie(response, refreshToken, ttl);
+
 		// 응답 DTO 변환
 		return userMapper.toLoginResponse(user, accessToken);
+	}
+
+	private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken, Duration ttl) {
+		ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+			.httpOnly(true)
+			.secure(false)
+			.sameSite("Lax")
+			.path("/api/v1/auth")
+			.maxAge(ttl)
+			.build();
+
+		response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+	}
+
+	@Transactional
+	public TokenResponseV1 refresh(HttpServletRequest request, HttpServletResponse response) {
+
+		// 쿠키에서 refreshToken 꺼내기
+		String refreshToken = extractRefreshTokenFromCookie(request);
+		if (refreshToken == null) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// refreshToken 만료 검증 및 claim 꺼내기
+		RefreshTokenClaims refreshTokenClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
+		String jwtId = refreshTokenClaims.getJwtId();
+
+		// Redis 조회하기
+		RefreshTokenRecord record = refreshTokenStore.find(jwtId);
+		if (record == null) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+		if (record.getRefreshTokenStatus() == RefreshTokenStatus.REVOKED) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// Redis 값과 refreshToken claim 일치 여부 확인
+		if (!record.getUserId().equals(refreshTokenClaims.getUserId())) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+		if (!record.getLoginSessionId().equals(refreshTokenClaims.getLoginSessionId())) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// 해시 비교
+		String incomingHash = TokenHashUtil.sha256(refreshToken);
+		if (!incomingHash.equals(record.getRefreshHash())) {
+			throw AppException.of(UserErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		// 통과하면 새 토큰 발급(RTR)
+		String newAccessToken = jwtTokenProvider.generateAccessToken(
+			refreshTokenClaims.getUserId(),
+			userRepository.findById(refreshTokenClaims.getUserId())
+				.orElseThrow(() -> AppException.of(UserErrorCode.USER_NOT_FOUND))
+				.getRole()
+		);
+
+		// loginSessionId 값은 유지
+		String newRefreshToken = jwtTokenProvider.generateRefreshToken(
+			refreshTokenClaims.getUserId(),
+			refreshTokenClaims.getLoginSessionId()
+		);
+
+		RefreshTokenClaims newClaims = jwtTokenProvider.parseRefreshToken(newRefreshToken);
+
+		// Redis 업데이트
+		refreshTokenStore.revoke(jwtId);
+		RefreshTokenRecord newRecord = RefreshTokenRecord.builder()
+			.userId(newClaims.getUserId())
+			.loginSessionId(newClaims.getLoginSessionId())
+			.refreshHash(TokenHashUtil.sha256(newRefreshToken))
+			.refreshTokenStatus(RefreshTokenStatus.ACTIVE)
+			.expiresAt(newClaims.getExpiresAt())
+			.build();
+
+		Duration ttl = Duration.ofMillis(newClaims.getExpiresAt() - System.currentTimeMillis());
+		refreshTokenStore.save(newClaims.getJwtId(), newRecord, ttl);
+
+		// 쿠키 갱신
+		setRefreshTokenCookie(response, newRefreshToken, ttl);
+
+		return TokenResponseV1.of(newAccessToken);
+	}
+
+	private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+		if (request.getCookies() == null) {
+			return null;
+		}
+		for (Cookie cookie : request.getCookies()) {
+			if ("refreshToken".equals(cookie.getName())) {
+				String value = cookie.getValue();
+				return (value == null || value.isBlank()) ? null : value;
+			}
+		}
+		return null;
 	}
 
 	@Transactional(readOnly = true)
